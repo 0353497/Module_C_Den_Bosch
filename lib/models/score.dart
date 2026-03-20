@@ -1,7 +1,7 @@
 class Score {
-  final int position;
   final String name;
   final int eggs;
+  final DateTime dateTime;
 
-  Score({required this.position, required this.name, required this.eggs});
+  Score({required this.name, required this.eggs, required this.dateTime});
 }

@@ -72,6 +72,12 @@ class _GamePageState extends State<GamePage>
               child: Row(
                 spacing: 12,
                 children: [
+                  Obx(() {
+                    return Text(
+                      "HIGHSCORE: ${scoreProvider.highScore.value}",
+                      style: TextStyle(fontSize: 22, color: Colors.white),
+                    );
+                  }),
                   for (int i = 0; i < 3; i++)
                     Transform.flip(
                       flipX: true,
@@ -194,6 +200,9 @@ class _GamePageState extends State<GamePage>
         if (egg.rect.overlaps(player)) {
           fallingEggs.removeAt(i);
           eggs++;
+          if (scoreProvider.highScore <= eggs) {
+            scoreProvider.highScore.value = eggs;
+          }
           continue;
         }
         fallingEggs[i] = egg.copyWith(

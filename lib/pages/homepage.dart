@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:cluck_catch/pages/game_page.dart';
 import 'package:cluck_catch/pages/score_page.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:get/route_manager.dart';
 
 class Homepage extends StatefulWidget {
@@ -11,6 +14,7 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
+  final Tween<double> rotatingRays = Tween(begin: 0, end: pi * 2);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,9 +29,18 @@ class _HomepageState extends State<Homepage> {
               child: Container(color: Color(0xff5EB5B9)),
             ),
             Positioned.fill(
-              child: Transform.scale(
-                scale: 3,
-                child: Image.asset("assets/images/sun.png"),
+              child: RepeatingAnimationBuilder(
+                builder: (context, value, child) {
+                  return Transform.rotate(
+                    angle: value,
+                    child: Transform.scale(
+                      scale: 3,
+                      child: Image.asset("assets/images/sun.png"),
+                    ),
+                  );
+                },
+                animatable: rotatingRays,
+                duration: 5.seconds,
               ),
             ),
             Positioned(
