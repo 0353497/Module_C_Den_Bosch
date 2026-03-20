@@ -1,8 +1,8 @@
 import 'dart:math';
 
+import 'package:cluck_catch/components/fail_dialog.dart';
 import 'package:cluck_catch/models/chicken.dart';
 import 'package:cluck_catch/models/egg.dart';
-import 'package:cluck_catch/pages/homepage.dart';
 import 'package:cluck_catch/provider/score_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -206,46 +206,7 @@ class _GamePageState extends State<GamePage>
 
     if (lives <= 0) {
       _ticker.stop();
-      Get.dialog(
-        SizedBox(
-          width: Get.width * .5,
-          height: Get.height * .6,
-          child: Dialog(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text(
-                  "GAME OVER",
-                  style: TextStyle(
-                    color: Color(0xffFF4D4D),
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  "WITH $eggs YOUR X!",
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                ),
-                TextButton(
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStatePropertyAll(Color(0xffF47E23)),
-                    foregroundColor: WidgetStatePropertyAll(Color(0xffffffff)),
-                  ),
-                  onPressed: () => resetGame(),
-                  child: Text("PLAY AGAIN"),
-                ),
-                TextButton(
-                  style: ButtonStyle(
-                    foregroundColor: WidgetStatePropertyAll(Colors.black),
-                  ),
-                  onPressed: () => Get.to(() => Homepage()),
-                  child: Text("BACK TO START"),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      Get.dialog(FailDialog(eggs: eggs, onTap: resetGame));
     }
     setState(() {});
   }
@@ -268,8 +229,6 @@ class _GamePageState extends State<GamePage>
   }
 
   void _movePlayer(GyroscopeEvent data) {
-    setState(() {
-      player = player.shift(Offset(data.z, 0));
-    });
+    player = player.shift(Offset(data.y * 20, 0));
   }
 }
