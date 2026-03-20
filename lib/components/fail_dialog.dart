@@ -3,6 +3,7 @@ import 'package:cluck_catch/pages/homepage.dart';
 import 'package:cluck_catch/provider/score_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FailDialog extends StatefulWidget {
   const FailDialog({super.key, required this.eggs, required this.onTap});
@@ -16,6 +17,13 @@ class FailDialog extends StatefulWidget {
 class _FailDialogState extends State<FailDialog> {
   final TextEditingController _nameController = TextEditingController();
   final ScoreProvider provider = Get.find<ScoreProvider>();
+  String? savedName;
+  late final SharedPreferences prefs;
+  @override
+  void initState() {
+    super.initState();
+    init();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +62,7 @@ class _FailDialogState extends State<FailDialog> {
                     children: [
                       Expanded(
                         child: TextFormField(
+                          initialValue: savedName,
                           decoration: InputDecoration(hint: Text("YOUR NAME")),
                           controller: _nameController,
                         ),
@@ -74,6 +83,10 @@ class _FailDialogState extends State<FailDialog> {
                               eggs: widget.eggs,
                               dateTime: DateTime.now(),
                             ),
+                          );
+                          prefs.setString(
+                            "savedUsername",
+                            _nameController.value.text.trim(),
                           );
                         },
                         child: Text("SAVE"),
@@ -111,5 +124,11 @@ class _FailDialogState extends State<FailDialog> {
         ),
       ),
     );
+  }
+
+  void init() async {
+    prefs = await SharedPreferences.getInstance();
+    savedName = prefs.getString("savedUsername");
+    setState(() {});
   }
 }
