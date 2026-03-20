@@ -1,4 +1,5 @@
 import 'package:cluck_catch/pages/game_page.dart';
+import 'package:cluck_catch/pages/score_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/route_manager.dart';
 
@@ -68,7 +69,7 @@ class _HomepageState extends State<Homepage> {
                           Color(0xffffffff),
                         ),
                       ),
-                      onPressed: () => GamePage(),
+                      onPressed: () => Get.to(() => GamePage()),
                       child: Text("START"),
                     ),
                   ),
@@ -81,7 +82,7 @@ class _HomepageState extends State<Homepage> {
                           Color(0xffffffff),
                         ),
                       ),
-                      onPressed: () {},
+                      onPressed: () => Get.to(() => ScorePage()),
                       child: Text("SCORES"),
                     ),
                   ),
