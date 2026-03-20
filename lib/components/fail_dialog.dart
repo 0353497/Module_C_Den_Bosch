@@ -15,10 +15,11 @@ class FailDialog extends StatefulWidget {
 }
 
 class _FailDialogState extends State<FailDialog> {
-  final TextEditingController _nameController = TextEditingController();
+  TextEditingController _nameController = TextEditingController();
   final ScoreProvider provider = Get.find<ScoreProvider>();
   String? savedName;
   late final SharedPreferences prefs;
+  Score? savedScore;
   @override
   void initState() {
     super.initState();
@@ -51,55 +52,81 @@ class _FailDialogState extends State<FailDialog> {
                 children: [
                   if (provider.scores.isNotEmpty)
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        const Text("1"),
-                        Text(provider.scores.first.name),
+                        Row(
+                          spacing: 12,
+                          children: [
+                            const Text("1"),
+                            Text(provider.scores.first.name),
+                          ],
+                        ),
 
-                        Text(provider.scores.first.name),
+                        Text("${provider.scores.first.eggs} EGGS"),
                       ],
                     ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          initialValue: savedName,
-                          decoration: InputDecoration(hint: Text("YOUR NAME")),
-                          controller: _nameController,
-                        ),
-                      ),
-                      TextButton(
-                        style: ButtonStyle(
-                          backgroundColor: WidgetStatePropertyAll(
-                            Color(0xffF47E23),
-                          ),
-                          foregroundColor: WidgetStatePropertyAll(
-                            Color(0xffffffff),
+                  if (savedScore == null)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            decoration: InputDecoration(
+                              hint: Text("YOUR NAME"),
+                            ),
+                            controller: _nameController,
                           ),
                         ),
-                        onPressed: () {
-                          provider.scores.add(
-                            Score(
+                        TextButton(
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStatePropertyAll(
+                              Color(0xffF47E23),
+                            ),
+                            foregroundColor: WidgetStatePropertyAll(
+                              Color(0xffffffff),
+                            ),
+                          ),
+                          onPressed: () {
+                            savedScore = Score(
                               name: _nameController.value.text.trim(),
                               eggs: widget.eggs,
                               dateTime: DateTime.now(),
-                            ),
-                          );
-                          prefs.setString(
-                            "savedUsername",
-                            _nameController.value.text.trim(),
-                          );
-                        },
-                        child: Text("SAVE"),
-                      ),
-                    ],
-                  ),
+                            );
+                            setState(() {});
+                            provider.scores.add(savedScore!);
+                            prefs.setString(
+                              "savedUsername",
+                              _nameController.value.text.trim(),
+                            );
+                          },
+                          child: Text("SAVE"),
+                        ),
+                      ],
+                    ),
+                  if (savedScore != null)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Row(
+                          spacing: 12,
+                          children: [const Text("2"), Text(savedScore!.name)],
+                        ),
+
+                        Text("${savedScore!.eggs} EGGS"),
+                      ],
+                    ),
                   if (provider.scores.isNotEmpty)
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        const Text("3"),
+                        Row(
+                          spacing: 12,
+                          children: [
+                            const Text("3"),
+                            Text(provider.scores.last.name),
+                          ],
+                        ),
 
-                        Text(provider.scores.last.name),
-                        Text(provider.scores.last.name),
+                        Text("${provider.scores.last.eggs} EGGS"),
                       ],
                     ),
                 ],
@@ -129,6 +156,9 @@ class _FailDialogState extends State<FailDialog> {
   void init() async {
     prefs = await SharedPreferences.getInstance();
     savedName = prefs.getString("savedUsername");
+    _nameController = TextEditingController.fromValue(
+      TextEditingValue(text: savedName ?? ""),
+    );
     setState(() {});
   }
 }

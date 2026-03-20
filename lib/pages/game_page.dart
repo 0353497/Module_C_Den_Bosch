@@ -188,8 +188,9 @@ class _GamePageState extends State<GamePage>
     for (var i = 0; i < fallingEggs.length; i++) {
       try {
         final Egg egg = fallingEggs[i];
-        if (egg.rect.bottom < 50) {
+        if (egg.rect.bottom > Get.height) {
           fallingEggs.removeAt(i);
+          lives--;
           continue;
         }
         if (egg.rect.overlaps(player) && egg.isRotten) {
