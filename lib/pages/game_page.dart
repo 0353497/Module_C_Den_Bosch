@@ -2,9 +2,12 @@ import 'dart:math';
 
 import 'package:cluck_catch/models/chicken.dart';
 import 'package:cluck_catch/models/egg.dart';
+import 'package:cluck_catch/pages/homepage.dart';
+import 'package:cluck_catch/provider/score_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key});
@@ -15,15 +18,16 @@ class GamePage extends StatefulWidget {
 
 class _GamePageState extends State<GamePage>
     with SingleTickerProviderStateMixin {
+  final ScoreProvider scoreProvider = Get.find<ScoreProvider>();
   int eggs = 0;
   int lives = 3;
   Rect player = Rect.fromLTWH(100, Get.height - 100, 200, 50);
-  final List<Chicken> chickens = [
+  List<Chicken> chickens = [
     Chicken(spawnDelay: Duration.zero, rect: Rect.fromLTWH(0, 100, 100, 100)),
-    Chicken(spawnDelay: 5.seconds, rect: Rect.fromLTWH(100, 100, 100, 100)),
-    Chicken(spawnDelay: 10.seconds, rect: Rect.fromLTWH(200, 100, 100, 100)),
+    Chicken(spawnDelay: 5.seconds, rect: Rect.fromLTWH(-50, 100, 100, 100)),
+    Chicken(spawnDelay: 10.seconds, rect: Rect.fromLTWH(-50, 100, 100, 100)),
   ];
-  final List<Egg> fallingEggs = [];
+  List<Egg> fallingEggs = [];
 
   late final Ticker _ticker;
   @override
@@ -31,6 +35,7 @@ class _GamePageState extends State<GamePage>
     super.initState();
     _ticker = createTicker((dur) => onTick(dur));
     _ticker.start();
+    gyroscopeEventStream().listen((data) => _movePlayer(data));
   }
 
   @override
@@ -116,7 +121,10 @@ class _GamePageState extends State<GamePage>
                   width: chickens[i].rect.width,
                   height: chickens[i].rect.height,
                   left: chickens[i].rect.left,
-                  child: Image.asset("assets/images/chicken.gif"),
+                  child: Transform.flip(
+                    flipX: chickens[i].goesToLeft,
+                    child: Image.asset("assets/images/chicken.gif"),
+                  ),
                 ),
           ],
         ),
@@ -162,8 +170,11 @@ class _GamePageState extends State<GamePage>
             lastSpawnEgg: dur,
           );
           bool isRotten = rnd.nextInt(9) == 0;
+          bool isFaster = rnd.nextInt(2) == 0;
 
-          fallingEggs.add(Egg(rect: chicken.rect, isRotten: isRotten));
+          fallingEggs.add(
+            Egg(rect: chicken.rect, isRotten: isRotten, isFaster: isFaster),
+          );
         }
         chickens[i] = chicken.copyWith(showChicken: true);
       }
@@ -185,9 +196,80 @@ class _GamePageState extends State<GamePage>
           eggs++;
           continue;
         }
-        fallingEggs[i] = egg.copyWith(rect: egg.rect.shift(Offset(0, 5)));
+        fallingEggs[i] = egg.copyWith(
+          rect: egg.isFaster
+              ? egg.rect.shift(Offset(0, 10))
+              : egg.rect.shift(Offset(0, 5)),
+        );
       } catch (e) {}
     }
+
+    if (lives <= 0) {
+      _ticker.stop();
+      Get.dialog(
+        SizedBox(
+          width: Get.width * .5,
+          height: Get.height * .6,
+          child: Dialog(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Text(
+                  "GAME OVER",
+                  style: TextStyle(
+                    color: Color(0xffFF4D4D),
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  "WITH $eggs YOUR X!",
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                ),
+                TextButton(
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStatePropertyAll(Color(0xffF47E23)),
+                    foregroundColor: WidgetStatePropertyAll(Color(0xffffffff)),
+                  ),
+                  onPressed: () => resetGame(),
+                  child: Text("PLAY AGAIN"),
+                ),
+                TextButton(
+                  style: ButtonStyle(
+                    foregroundColor: WidgetStatePropertyAll(Colors.black),
+                  ),
+                  onPressed: () => Get.to(() => Homepage()),
+                  child: Text("BACK TO START"),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     setState(() {});
+  }
+
+  void resetGame() {
+    eggs = 0;
+    lives = 3;
+    player = Rect.fromLTWH(100, Get.height - 100, 200, 50);
+    chickens = [
+      Chicken(spawnDelay: Duration.zero, rect: Rect.fromLTWH(0, 100, 100, 100)),
+      Chicken(spawnDelay: 10.seconds, rect: Rect.fromLTWH(200, 100, 100, 100)),
+      Chicken(spawnDelay: 5.seconds, rect: Rect.fromLTWH(100, 100, 100, 100)),
+    ];
+    fallingEggs = [];
+    Get.back();
+    if (_ticker.isActive) {
+      _ticker.stop();
+    }
+    _ticker.start();
+  }
+
+  void _movePlayer(GyroscopeEvent data) {
+    setState(() {
+      player = player.shift(Offset(data.z, 0));
+    });
   }
 }
