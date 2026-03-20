@@ -1,9 +1,12 @@
 import 'package:cluck_catch/pages/homepage.dart';
+import 'package:cluck_catch/provider/score_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:get/get_instance/get_instance.dart';
+import 'package:get/route_manager.dart';
 
 void main() {
   runApp(const MyApp());
+  Get.put<ScoreProvider>(ScoreProvider());
 }
 
 class MyApp extends StatelessWidget {

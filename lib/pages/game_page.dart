@@ -1,6 +1,7 @@
+import 'dart:math';
+
 import 'package:cluck_catch/models/chicken.dart';
 import 'package:cluck_catch/models/egg.dart';
-import 'package:cluck_catch/models/player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
@@ -16,13 +17,12 @@ class _GamePageState extends State<GamePage>
     with SingleTickerProviderStateMixin {
   int eggs = 0;
   int lives = 3;
-  Player player = Player(rect: Rect.fromLTWH(100, Get.height - 100, 200, 50));
+  Rect player = Rect.fromLTWH(100, Get.height - 100, 200, 50);
   final List<Chicken> chickens = [
     Chicken(spawnDelay: Duration.zero, rect: Rect.fromLTWH(0, 100, 100, 100)),
-    Chicken(spawnDelay: 5.seconds, rect: Rect.fromLTWH(0, 100, 100, 100)),
-    Chicken(spawnDelay: 10.seconds, rect: Rect.fromLTWH(0, 100, 100, 100)),
+    Chicken(spawnDelay: 5.seconds, rect: Rect.fromLTWH(100, 100, 100, 100)),
+    Chicken(spawnDelay: 10.seconds, rect: Rect.fromLTWH(200, 100, 100, 100)),
   ];
-  final List<bool> showChickens = [true, false, false];
   final List<Egg> fallingEggs = [];
 
   late final Ticker _ticker;
@@ -43,12 +43,40 @@ class _GamePageState extends State<GamePage>
   Widget build(BuildContext context) {
     return Scaffold(
       body: GestureDetector(
+        onHorizontalDragUpdate: (details) {
+          setState(() {
+            player = Rect.fromLTWH(
+              details.globalPosition.dx,
+              Get.height - 100,
+              200,
+              50,
+            );
+          });
+        },
         child: Stack(
           children: [
             Positioned.fill(
               child: Image.asset(
                 "assets/images/background.png",
                 fit: BoxFit.cover,
+              ),
+            ),
+            Positioned(
+              top: 24,
+              right: 24,
+              child: Row(
+                spacing: 12,
+                children: [
+                  for (int i = 0; i < 3; i++)
+                    Transform.flip(
+                      flipX: true,
+                      child: Image.asset(
+                        i >= lives
+                            ? "assets/images/heard_open.png"
+                            : "assets/images/heard_filled.png",
+                      ),
+                    ),
+                ],
               ),
             ),
             Positioned(
@@ -64,16 +92,29 @@ class _GamePageState extends State<GamePage>
               ),
             ),
             Positioned(
-              top: player.rect.top,
-              width: player.rect.width,
-              left: player.rect.left,
+              top: player.top,
+              width: player.width,
+              left: player.left,
               child: Image.asset("assets/images/eggbox.png"),
             ),
+            for (var i = 0; i < fallingEggs.length; i++)
+              Positioned(
+                width: fallingEggs[i].rect.width,
+                left: fallingEggs[i].rect.left,
+                top: fallingEggs[i].rect.top,
+                height: fallingEggs[i].rect.height,
+                child: Image.asset(
+                  fallingEggs[i].isRotten
+                      ? "assets/images/egg_green.png"
+                      : "assets/images/egg_white.png",
+                ),
+              ),
             for (var i = 0; i < 3; i++)
-              if (showChickens[i])
+              if (chickens[i].showChicken)
                 Positioned(
                   top: 150,
                   width: chickens[i].rect.width,
+                  height: chickens[i].rect.height,
                   left: chickens[i].rect.left,
                   child: Image.asset("assets/images/chicken.gif"),
                 ),
@@ -85,34 +126,67 @@ class _GamePageState extends State<GamePage>
 
   void onTick(Duration dur) {
     for (var i = 0; i < 3; i++) {
-      final Chicken chicken = chickens[i];
+      Chicken chicken = chickens[i];
       if (dur.inSeconds > chicken.spawnDelay.inSeconds) {
-        showChickens[i] = true;
-        chickens[i] = Chicken(
-          spawnDelay: 0.seconds,
-          rect: chicken.rect,
-          showChicken: true,
-        );
-
-        if (chicken.rect.left > Get.width - 50) {
-          chickens[i] = Chicken(
-            spawnDelay: 0.seconds,
+        if (!chicken.goesToLeft) {
+          chicken = chicken.copyWith(rect: chicken.rect.shift(Offset(5, 0)));
+          chickens[i] = chicken.copyWith(
+            rect: chicken.rect.shift(Offset(5, 0)),
+          );
+        } else {
+          chicken = chicken.copyWith(rect: chicken.rect.shift(Offset(-5, 0)));
+          chickens[i] = chicken.copyWith(
             rect: chicken.rect.shift(Offset(-5, 0)),
           );
         }
-        if (chicken.rect.right < 50) {
-          chickens[i] = Chicken(
-            spawnDelay: 0.seconds,
-            rect: chicken.rect.shift(Offset(5, 0)),
-          );
+
+        if (chicken.rect.left < 49) {
+          chicken = chicken.copyWith(goesToLeft: false);
+          chickens[i] = chicken.copyWith(goesToLeft: false);
+        }
+        if (chicken.rect.right > Get.width - 50) {
+          chicken = chicken.copyWith(goesToLeft: true);
+          chickens[i] = chicken.copyWith(goesToLeft: true);
         }
 
-        chickens[i] = Chicken(
-          spawnDelay: 0.seconds,
-          rect: chicken.rect,
-          showChicken: true,
-        );
+        if (dur.inMilliseconds >
+            (chicken.lastSpawnEgg.inMilliseconds +
+                chicken.randomDelay * 1000)) {
+          final rnd = Random();
+          chicken = chicken.copyWith(
+            randomDelay: rnd.nextInt(3) + 2,
+            lastSpawnEgg: dur,
+          );
+          chickens[i] = chicken.copyWith(
+            randomDelay: rnd.nextInt(3) + 2,
+            lastSpawnEgg: dur,
+          );
+          bool isRotten = rnd.nextInt(9) == 0;
+
+          fallingEggs.add(Egg(rect: chicken.rect, isRotten: isRotten));
+        }
+        chickens[i] = chicken.copyWith(showChicken: true);
       }
+    }
+    for (var i = 0; i < fallingEggs.length; i++) {
+      try {
+        final Egg egg = fallingEggs[i];
+        if (egg.rect.bottom < 50) {
+          fallingEggs.removeAt(i);
+          continue;
+        }
+        if (egg.rect.overlaps(player) && egg.isRotten) {
+          lives--;
+          fallingEggs.removeAt(i);
+          continue;
+        }
+        if (egg.rect.overlaps(player)) {
+          fallingEggs.removeAt(i);
+          eggs++;
+          continue;
+        }
+        fallingEggs[i] = egg.copyWith(rect: egg.rect.shift(Offset(0, 5)));
+      } catch (e) {}
     }
     setState(() {});
   }
